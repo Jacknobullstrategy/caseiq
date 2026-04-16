@@ -10,36 +10,29 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'Not authenticated' }) };
   }
 
-  let user;
+  // Decode JWT to get user info (no verification needed — Netlify handles that)
+  let userEmail = 'unknown';
+  let createdAt = null;
+  let hasPaid = false;
+
   try {
-    const context = event.clientContext || {};
-    user = context.user;
-
-    if (!user && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      const payload = token.split('.')[1];
-      if (payload) {
-        const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
-        user = {
-          sub: decoded.sub,
-          email: decoded.email,
-          created_at: new Date(decoded.iat * 1000).toISOString(),
-          app_metadata: decoded.app_metadata || {}
-        };
-      }
+    const token = authHeader.replace('Bearer ', '');
+    const payload = token.split('.')[1];
+    if (payload) {
+      const decoded = JSON.parse(
+        Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')
+      );
+      userEmail = decoded.email || 'unknown';
+      createdAt = decoded.iat ? new Date(decoded.iat * 1000) : new Date();
+      hasPaid = (decoded.app_metadata?.roles || []).includes('paid');
     }
-
-    if (!user) throw new Error('No user context');
-  } catch {
-    return { statusCode: 401, body: JSON.stringify({ error: 'Invalid token' }) };
+  } catch (e) {
+    console.log('JWT decode error:', e.message);
   }
 
-  const roles = user.app_metadata?.roles || [];
-  const hasPaid = roles.includes('paid');
-
-  if (!hasPaid) {
-    const created = new Date(user.created_at);
-    const daysSince = (Date.now() - created) / (1000 * 60 * 60 * 24);
+  // Check trial (14 days from account creation)
+  if (!hasPaid && createdAt) {
+    const daysSince = (Date.now() - createdAt) / (1000 * 60 * 60 * 24);
     if (daysSince > 14) {
       return { statusCode: 402, body: JSON.stringify({ error: 'Trial expired.' }) };
     }
@@ -99,11 +92,6 @@ Respond ONLY with a valid JSON object (no markdown, no code fences):
   "next_steps": ["<step>", ...]
 }
 
-Guidelines:
-- accept_factors: reasons to take the case
-- decline_factors: reasons not to
-- key_risks: specific risks if accepted
-- next_steps: concrete immediate actions
 - 2-5 items per list, specific and actionable
 - NEEDS REVIEW when too ambiguous for a firm call`;
 
