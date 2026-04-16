@@ -1,6 +1,3 @@
-// /.netlify/functions/screen
-// Protected endpoint — verifies Netlify Identity JWT + subscription, then calls Claude
-
 const Anthropic = require('@anthropic-ai/sdk');
 
 exports.handler = async (event) => {
@@ -8,7 +5,6 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // ── Verify auth ──────────────────────────────────────────────
   const authHeader = event.headers.authorization || '';
   if (!authHeader.startsWith('Bearer ')) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Not authenticated' }) };
@@ -16,15 +12,28 @@ exports.handler = async (event) => {
 
   let user;
   try {
-    // Netlify Identity passes user context via the clientContext
     const context = event.clientContext || {};
     user = context.user;
+
+    if (!user && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      const payload = token.split('.')[1];
+      if (payload) {
+        const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+        user = {
+          sub: decoded.sub,
+          email: decoded.email,
+          created_at: new Date(decoded.iat * 1000).toISOString(),
+          app_metadata: decoded.app_metadata || {}
+        };
+      }
+    }
+
     if (!user) throw new Error('No user context');
   } catch {
     return { statusCode: 401, body: JSON.stringify({ error: 'Invalid token' }) };
   }
 
-  // ── Check subscription or trial ──────────────────────────────
   const roles = user.app_metadata?.roles || [];
   const hasPaid = roles.includes('paid');
 
@@ -32,11 +41,10 @@ exports.handler = async (event) => {
     const created = new Date(user.created_at);
     const daysSince = (Date.now() - created) / (1000 * 60 * 60 * 24);
     if (daysSince > 14) {
-      return { statusCode: 402, body: JSON.stringify({ error: 'Trial expired. Please subscribe to continue.' }) };
+      return { statusCode: 402, body: JSON.stringify({ error: 'Trial expired.' }) };
     }
   }
 
-  // ── Parse body ───────────────────────────────────────────────
   let body;
   try { body = JSON.parse(event.body); }
   catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request body' }) }; }
@@ -50,7 +58,6 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Missing required fields' }) };
   }
 
-  // ── Call Claude ──────────────────────────────────────────────
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -93,8 +100,8 @@ Respond ONLY with a valid JSON object (no markdown, no code fences):
 }
 
 Guidelines:
-- accept_factors: reasons to take the case (merits, damages, liability, collectability)
-- decline_factors: reasons not to (weak facts, SOL, low damages, prior counsel, etc.)
+- accept_factors: reasons to take the case
+- decline_factors: reasons not to
 - key_risks: specific risks if accepted
 - next_steps: concrete immediate actions
 - 2-5 items per list, specific and actionable
