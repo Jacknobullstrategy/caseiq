@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CaseIQ — Intake Screener</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #0c0c0c; --black2: #161616; --black3: #1e1e1e;
+      --gold: #c9a84c; --gold-light: #e8c96d;
+      --white: #ffffff; --off-white: #f5f3ef;
+      --lgray: #e2e2e2; --mgray: #888888; --dgray: #333;
+      --green: #166534; --green-bg: #dcfce7; --green-b: #86efac;
+      --red: #991b1b; --red-bg: #fee2e2; --red-b: #fca5a5;
+      --yellow: #854d0e; --yellow-bg: #fef9c3; --yellow-b: #fde047;
+      --navy: #1a2744;
+    }
+    body { font-family: 'Georgia', serif; background: #f5f3ef; color: #1a1a1a; min-height: 100vh; }
+
+    /* Gate overlay */
+    #gate {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(12,12,12,0.92); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+    }
+    #gate.show { display: flex; }
+    .gate-box {
+      background: #161616; border: 1px solid #333;
+      border-radius: 14px; padding: 40px 36px;
+      max-width: 420px; width: 95%; text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+    .gate-icon { font-size: 44px; margin-bottom: 16px; }
+    .gate-box h2 { font-size: 22px; color: #fff; margin-bottom: 10px; }
+    .gate-box p { font-size: 14px; color: #888; font-family: Arial, sans-serif; line-height: 1.6; margin-bottom: 24px; }
+    .gate-box .trial-note { font-size: 12px; color: var(--gold); margin-bottom: 20px; }
+    .btn-gate {
+      width: 100%; padding: 13px; background: var(--gold); color: #0c0c0c;
+      border: none; border-radius: 8px; font-family: Arial, sans-serif;
+      font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 10px;
+    }
+    .btn-gate:hover { background: var(--gold-light); }
+    .btn-gate-ghost {
+      width: 100%; padding: 11px; background: none;
+      border: 1px solid #333; color: #888; border-radius: 8px;
+      font-family: Arial, sans-serif; font-size: 13px; cursor: pointer;
+    }
+    .btn-gate-ghost:hover { border-color: #555; color: #aaa; }
+
+    /* Header */
+    header {
+      background: var(--black); border-bottom: 1px solid #1e1e1e;
+      padding: 0 24px; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 40;
+    }
+    .hdr-left { display: flex; align-items: center; gap: 10px; }
+    .hdr-logo { font-size: 16px; font-weight: 700; color: #fff; }
+    .hdr-logo span { color: var(--gold); }
+    .hdr-divider { width: 1px; height: 18px; background: #333; }
+    .hdr-product { font-size: 13px; color: #555; font-family: Arial, sans-serif; }
+    .hdr-right { display: flex; align-items: center; gap: 14px; }
+    .hdr-user { font-size: 12px; color: #555; font-family: Arial, sans-serif; }
+    .btn-logout {
+      background: none; border: 1px solid #222; color: #555; padding: 6px 12px;
+      border-radius: 5px; font-family: Arial, sans-serif; font-size: 12px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: #444; color: #888; }
+    .trial-badge {
+      background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3);
+      color: var(--gold); font-size: 11px; font-weight: 700;
+      font-family: Arial, sans-serif; padding: 4px 10px; border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .container { max-width: 1160px; margin: 0 auto; padding: 24px 20px; }
+    .layout { display: grid; grid-template-columns: 460px 1fr; gap: 20px; align-items: start; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+    .card { background: #fff; border: 1px solid var(--lgray); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .card-hdr { padding: 14px 20px; border-bottom: 1px solid var(--lgray); display: flex; align-items: center; gap: 8px; }
+    .card-hdr-dot { width: 24px; height: 24px; border-radius: 5px; background: var(--navy); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .card-title { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.8px; font-family: Arial, sans-serif; }
+    .card-body { padding: 18px 20px; }
+
+    .section-sep { font-size: 10px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; font-family: Arial, sans-serif; margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; }
+    .section-sep::after { content: ''; flex: 1; height: 1px; background: var(--lgray); }
+    .section-sep:first-child { margin-top: 0; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-family: Arial, sans-serif; }
+    label .opt { font-weight: 400; color: #aaa; text-transform: none; letter-spacing: 0; }
+    input[type="text"], input[type="date"], select, textarea {
+      width: 100%; padding: 9px 11px; border: 1.5px solid var(--lgray); border-radius: 6px;
+      font-family: Arial, sans-serif; font-size: 13.5px; color: #1a1a1a;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,39,68,0.07); }
+    textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+    ::placeholder { color: #bbb; }
+
+    .yn { display: flex; gap: 6px; }
+    .yn input[type="radio"] { display: none; }
+    .yn label { flex: 1; text-align: center; padding: 8px; border: 1.5px solid var(--lgray); border-radius: 6px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: #777; background: #fff; transition: all 0.15s; text-transform: none; letter-spacing: 0; margin: 0; }
+    .yn input[type="radio"]:checked + label { border-color: var(--navy); background: var(--navy); color: #fff; }
+
+    .btn-screen {
+      width: 100%; padding: 13px; background: var(--navy); color: #fff; border: none; border-radius: 8px;
+      font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 9px;
+      margin-top: 16px;
+    }
+    .btn-screen:hover { background: #243058; }
+    .btn-screen:disabled { background: #aaa; cursor: not-allowed; }
+
+    .spinner { width: 17px; height: 17px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .alert { padding: 10px 13px; border-radius: 6px; font-size: 13px; font-family: Arial, sans-serif; margin-bottom: 12px; display: none; }
+    .alert.error { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-b); }
+
+    /* Results */
+    .results-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 340px; color: #bbb; text-align: center; gap: 12px; }
+    .results-empty-icon { font-size: 44px; opacity: 0.3; }
+    .results-empty p { font-size: 13.5px; font-family: Arial, sans-serif; max-width: 220px; line-height: 1.6; }
+
+    .results-content { display: none; }
+
+    .verdict-banner { border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 18px; border: 2px solid transparent; }
+    .verdict-banner.accept { background: var(--green-bg); border-color: var(--green-b); }
+    .verdict-banner.decline { background: var(--red-bg); border-color: var(--red-b); }
+    .verdict-banner.review { background: var(--yellow-bg); border-color: var(--yellow-b); }
+    .verdict-icon { font-size: 34px; flex-shrink: 0; line-height: 1; }
+    .verdict-label { font-size: 18px; font-weight: 800; font-family: Arial, sans-serif; }
+    .accept .verdict-label { color: var(--green); }
+    .decline .verdict-label { color: var(--red); }
+    .review .verdict-label { color: var(--yellow); }
+    .verdict-summary { font-size: 13px; color: #555; font-family: Arial, sans-serif; margin-top: 3px; line-height: 1.5; }
+    .conf-label { font-size: 10px; font-family: Arial, sans-serif; font-weight: 700; color: #777; margin: 8px 0 4px; display: flex; justify-content: space-between; }
+    .conf-bar { height: 7px; border-radius: 99px; background: rgba(0,0,0,0.08); overflow: hidden; }
+    .conf-fill { height: 100%; border-radius: 99px; transition: width 0.8s ease; }
+    .accept .conf-fill { background: #22c55e; }
+    .decline .conf-fill { background: #ef4444; }
+    .review .conf-fill { background: #eab308; }
+
+    .result-section { margin-bottom: 16px; }
+    .result-section-title { font-size: 10px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.8px; font-family: Arial, sans-serif; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .result-section-title::after { content: ''; flex: 1; height: 1px; background: var(--lgray); }
+
+    .factor-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-family: Arial, sans-serif; line-height: 1.5; margin-bottom: 6px; color: #1a1a1a; }
+    .factor-dot { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
+    .factor-dot.pro { background: var(--green-bg); color: var(--green); }
+    .factor-dot.con { background: var(--red-bg); color: var(--red); }
+    .factor-dot.risk { background: var(--yellow-bg); color: var(--yellow); }
+    .step-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-family: Arial, sans-serif; line-height: 1.5; margin-bottom: 7px; }
+    .step-num { min-width: 20px; height: 20px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+
+    .action-row { display: flex; gap: 9px; margin-top: 18px; }
+    .btn-action { flex: 1; padding: 9px 12px; border: 1.5px solid var(--lgray); border-radius: 7px; background: #fff; color: #1a1a1a; font-family: Arial, sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn-action:hover { border-color: var(--navy); color: var(--navy); }
+    .btn-action.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .btn-action.primary:hover { background: #243058; }
+
+    .history-wrap { margin-top: 20px; }
+    .history-card { background: #fff; border: 1px solid var(--lgray); border-radius: 10px; overflow: hidden; }
+    .history-hdr { padding: 11px 16px; border-bottom: 1px solid var(--lgray); font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.7px; font-family: Arial, sans-serif; display: flex; align-items: center; gap: 7px; }
+    .hist-badge { background: var(--navy); color: #fff; font-size: 10px; padding: 2px 7px; border-radius: 9px; }
+    .hist-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s; font-family: Arial, sans-serif; }
+    .hist-row:last-child { border-bottom: none; }
+    .hist-row:hover { background: #f9f9f9; }
+    .hist-name { font-size: 13px; font-weight: 600; }
+    .hist-area { font-size: 11px; color: #aaa; }
+    .hist-verdict { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .hist-verdict.accept { background: var(--green-bg); color: var(--green); }
+    .hist-verdict.decline { background: var(--red-bg); color: var(--red); }
+    .hist-verdict.review { background: var(--yellow-bg); color: var(--yellow); }
+    .hist-conf { font-size: 11px; color: #aaa; }
+  </style>
+</head>
+<body>
+
+<!-- Subscription gate overlay -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-icon">🔒</div>
+    <h2>Your free trial has ended</h2>
+    <p>You've used your 14-day free trial. Subscribe to keep screening cases with CaseIQ.</p>
+    <p class="trial-note">Firms typically recover the monthly cost from a single better intake decision.</p>
+    <button class="btn-gate" onclick="startCheckout()">Subscribe — $199/month</button>
+    <button class="btn-gate-ghost" onclick="netlifyIdentity.logout()">Log out</button>
+  </div>
+</div>
+
+<header>
+  <div class="hdr-left">
+    <div class="hdr-logo">NoBull<span>Strategy</span></div>
+    <div class="hdr-divider"></div>
+    <div class="hdr-product">CaseIQ Screener</div>
+  </div>
+  <div class="hdr-right">
+    <span class="trial-badge" id="trialBadge" style="display:none;" onclick="startCheckout()"></span>
+    <span class="hdr-user" id="userEmail"></span>
+    <button class="btn-logout" onclick="netlifyIdentity.logout()">Log out</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="layout">
+    <!-- Intake Form -->
+    <div>
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-hdr-dot">📋</div>
+          <span class="card-title">Intake Form</span>
+        </div>
+        <div class="card-body">
+          <div class="alert error" id="errorAlert"></div>
+
+          <div class="section-sep">Client Information</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Client Name</label>
+              <input type="text" id="clientName" placeholder="Full name"/>
+            </div>
+            <div class="form-group">
+              <label>Contact <span class="opt">(optional)</span></label>
+              <input type="text" id="clientContact" placeholder="Phone or email"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Practice Area</label>
+              <select id="practiceArea">
+                <option value="">Select...</option>
+                <option>Personal Injury</option>
+                <option>Medical Malpractice</option>
+                <option>Employment / Wrongful Termination</option>
+                <option>Discrimination / Harassment</option>
+                <option>Wage &amp; Hour</option>
+                <option>Contract Dispute</option>
+                <option>Real Estate</option>
+                <option>Family Law / Divorce</option>
+                <option>Criminal Defense</option>
+                <option>Immigration</option>
+                <option>Intellectual Property</option>
+                <option>Business Litigation</option>
+                <option>Bankruptcy</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Incident Date <span class="opt">(approx.)</span></label>
+              <input type="date" id="incidentDate"/>
+            </div>
+          </div>
+
+          <div class="section-sep">Case Facts</div>
+          <div class="form-group">
+            <label>What happened?</label>
+            <textarea id="caseDescription" placeholder="Describe the incident, dispute, or situation as the client explained it."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Alleged damages or harm</label>
+            <textarea id="damages" style="min-height:65px;" placeholder="e.g. lost wages, medical bills, injury, wrongful termination..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Opposing party <span class="opt">(optional)</span></label>
+            <input type="text" id="opposingParty" placeholder="Name, company, insurer, employer, etc."/>
+          </div>
+
+          <div class="section-sep">Screening Flags</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Prior attorney on this matter?</label>
+              <div class="yn">
+                <input type="radio" name="pa" id="pa_yes" value="Yes"/>
+                <label for="pa_yes">Yes</label>
+                <input type="radio" name="pa" id="pa_no" value="No" checked/>
+                <label for="pa_no">No</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>SOL concern?</label>
+              <div class="yn">
+                <input type="radio" name="sol" id="sol_yes" value="Yes"/>
+                <label for="sol_yes">Yes</label>
+                <input type="radio" name="sol" id="sol_no" value="No" checked/>
+                <label for="sol_no">No</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Evidence available?</label>
+              <div class="yn">
+                <input type="radio" name="ev" id="ev_yes" value="Yes"/>
+                <label for="ev_yes">Yes</label>
+                <input type="radio" name="ev" id="ev_no" value="No" checked/>
+                <label for="ev_no">No</label>
+                <input type="radio" name="ev" id="ev_unk" value="Unknown"/>
+                <label for="ev_unk">?</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Adverse party insured?</label>
+              <div class="yn">
+                <input type="radio" name="ins" id="ins_yes" value="Yes"/>
+                <label for="ins_yes">Yes</label>
+                <input type="radio" name="ins" id="ins_no" value="No" checked/>
+                <label for="ins_no">No</label>
+                <input type="radio" name="ins" id="ins_unk" value="Unknown"/>
+                <label for="ins_unk">?</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Additional notes <span class="opt">(optional)</span></label>
+            <textarea id="notes" style="min-height:60px;" placeholder="Red flags, referral source, urgency, prior litigation history..."></textarea>
+          </div>
+
+          <button class="btn-screen" id="screenBtn" onclick="screenCase()">
+            <span id="btnIcon">🔍</span>
+            <span id="btnText">Screen This Case</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div>
+      <div class="card" style="min-height: 420px; position: sticky; top: 68px;">
+        <div class="card-hdr">
+          <div class="card-hdr-dot">📊</div>
+          <span class="card-title">Screening Result</span>
+        </div>
+        <div class="card-body">
+          <div class="results-empty" id="resultsEmpty">
+            <div class="results-empty-icon">🔍</div>
+            <p>Complete the intake form and click <strong>Screen This Case</strong>.</p>
+          </div>
+          <div class="results-content" id="resultsContent">
+            <div class="verdict-banner" id="verdictBanner">
+              <div class="verdict-icon" id="verdictIcon"></div>
+              <div style="flex:1;">
+                <div class="verdict-label" id="verdictLabel"></div>
+                <div class="verdict-summary" id="verdictSummary"></div>
+                <div class="conf-label"><span>Confidence</span><span id="confVal"></span></div>
+                <div class="conf-bar"><div class="conf-fill" id="confFill"></div></div>
+              </div>
+            </div>
+            <div class="result-section" id="proSec">
+              <div class="result-section-title">Factors Supporting Acceptance</div>
+              <div id="proList"></div>
+            </div>
+            <div class="result-section" id="conSec">
+              <div class="result-section-title">Factors Against Acceptance</div>
+              <div id="conList"></div>
+            </div>
+            <div class="result-section" id="riskSec">
+              <div class="result-section-title">Key Risks</div>
+              <div id="riskList"></div>
+            </div>
+            <div class="result-section" id="stepsSec">
+              <div class="result-section-title">Recommended Next Steps</div>
+              <div id="stepsList"></div>
+            </div>
+            <div class="action-row">
+              <button class="btn-action" onclick="window.print()">🖨 Print</button>
+              <button class="btn-action" id="copyBtn" onclick="copyResult()">📋 Copy</button>
+              <button class="btn-action primary" onclick="clearForm()">+ New Case</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="history-wrap" id="histWrap" style="display:none;">
+        <div class="history-card">
+          <div class="history-hdr">Recent Screenings <span class="hist-badge" id="histBadge">0</span></div>
+          <div id="histList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentUser = null;
+  let lastResult = null;
+  let history = [];
+
+  // ── Auth ──────────────────────────────────────────────────────
+  netlifyIdentity.on('init', user => {
+    if (!user) { window.location.href = '/'; return; }
+    currentUser = user;
+    document.getElementById('userEmail').textContent = user.email;
+    checkAccess(user);
+  });
+
+  netlifyIdentity.on('logout', () => { window.location.href = '/'; });
+
+  function checkAccess(user) {
+    const roles = user.app_metadata?.roles || [];
+    const hasPaid = roles.includes('paid');
+    if (hasPaid) return; // full access
+
+    // Check 14-day trial
+    const created = new Date(user.created_at);
+    const daysSince = (Date.now() - created) / (1000 * 60 * 60 * 24);
+    const daysLeft = Math.max(0, Math.ceil(14 - daysSince));
+
+    if (daysLeft > 0) {
+      const badge = document.getElementById('trialBadge');
+      badge.style.display = 'inline-block';
+      badge.textContent = `🕐 ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left in trial`;
+    } else {
+      document.getElementById('gate').classList.add('show');
+    }
+  }
+
+  // ── Stripe Checkout ───────────────────────────────────────────
+  async function startCheckout() {
+    const user = netlifyIdentity.currentUser();
+    if (!user) return;
+    const token = await user.jwt();
+    const res = await fetch('/.netlify/functions/create-checkout', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+    });
+    const { url } = await res.json();
+    if (url) window.location.href = url;
+  }
+
+  // ── Screen Case ───────────────────────────────────────────────
+  async function screenCase() {
+    const clientName      = document.getElementById('clientName').value.trim();
+    const practiceArea    = document.getElementById('practiceArea').value;
+    const incidentDate    = document.getElementById('incidentDate').value;
+    const caseDescription = document.getElementById('caseDescription').value.trim();
+    const damages         = document.getElementById('damages').value.trim();
+    const opposingParty   = document.getElementById('opposingParty').value.trim();
+    const priorAttorney   = document.querySelector('input[name="pa"]:checked').value;
+    const solConcern      = document.querySelector('input[name="sol"]:checked').value;
+    const evidence        = document.querySelector('input[name="ev"]:checked').value;
+    const insurance       = document.querySelector('input[name="ins"]:checked').value;
+    const notes           = document.getElementById('notes').value.trim();
+
+    hideError();
+    if (!clientName) { showError('Please enter the client\'s name.'); return; }
+    if (!practiceArea) { showError('Please select a practice area.'); return; }
+    if (!caseDescription) { showError('Please describe what happened.'); return; }
+    if (!damages) { showError('Please describe the alleged damages.'); return; }
+
+    setLoading(true);
+
+    try {
+      const user = netlifyIdentity.currentUser();
+      const token = await user.jwt();
+
+      const res = await fetch('/.netlify/functions/screen', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientName, practiceArea, incidentDate, caseDescription,
+          damages, opposingParty, priorAttorney, solConcern, evidence, insurance, notes
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.status === 402) { document.getElementById('gate').classList.add('show'); return; }
+      if (!res.ok) { showError(data.error || 'Something went wrong. Please try again.'); return; }
+
+      lastResult = { ...data, clientName, practiceArea };
+      renderResult(data);
+      addHistory(clientName, practiceArea, data.recommendation, data.confidence);
+
+    } catch (err) {
+      showError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderResult(r) {
+    document.getElementById('resultsEmpty').style.display = 'none';
+    document.getElementById('resultsContent').style.display = 'block';
+
+    const rec = (r.recommendation || '').toUpperCase();
+    const isAccept = rec === 'ACCEPT', isDecline = rec === 'DECLINE';
+    const cls = isAccept ? 'accept' : isDecline ? 'decline' : 'review';
+
+    document.getElementById('verdictBanner').className = `verdict-banner ${cls}`;
+    document.getElementById('verdictIcon').textContent = isAccept ? '✅' : isDecline ? '❌' : '⚠️';
+    document.getElementById('verdictLabel').textContent = isAccept ? 'Recommend: ACCEPT' : isDecline ? 'Recommend: DECLINE' : 'NEEDS FURTHER REVIEW';
+    document.getElementById('verdictSummary').textContent = r.summary || '';
+
+    const conf = Math.min(100, Math.max(0, parseInt(r.confidence) || 0));
+    document.getElementById('confVal').textContent = conf + '%';
+    setTimeout(() => { document.getElementById('confFill').style.width = conf + '%'; }, 50);
+
+    renderFactors('proList', r.accept_factors || [], 'pro', '✓');
+    renderFactors('conList', r.decline_factors || [], 'con', '✗');
+    renderFactors('riskList', r.key_risks || [], 'risk', '⚠');
+
+    document.getElementById('stepsList').innerHTML = (r.next_steps || []).map((s, i) =>
+      `<div class="step-item"><div class="step-num">${i+1}</div><div>${s}</div></div>`
+    ).join('');
+
+    document.getElementById('proSec').style.display = r.accept_factors?.length ? 'block' : 'none';
+    document.getElementById('conSec').style.display = r.decline_factors?.length ? 'block' : 'none';
+    document.getElementById('riskSec').style.display = r.key_risks?.length ? 'block' : 'none';
+    document.getElementById('stepsSec').style.display = r.next_steps?.length ? 'block' : 'none';
+  }
+
+  function renderFactors(id, items, type, sym) {
+    document.getElementById(id).innerHTML = items.map(item =>
+      `<div class="factor-item"><div class="factor-dot ${type}">${sym}</div><div>${item}</div></div>`
+    ).join('');
+  }
+
+  function addHistory(name, area, verdict, conf) {
+    const cls = verdict === 'ACCEPT' ? 'accept' : verdict === 'DECLINE' ? 'decline' : 'review';
+    history.unshift({ name, area, verdict, conf, cls });
+    if (history.length > 20) history.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const wrap = document.getElementById('histWrap');
+    if (!history.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    document.getElementById('histBadge').textContent = history.length;
+    document.getElementById('histList').innerHTML = history.map((s, i) => `
+      <div class="hist-row" onclick="loadHistory(${i})">
+        <div><div class="hist-name">${s.name}</div><div class="hist-area">${s.area}</div></div>
+        <div class="hist-verdict ${s.cls}">${s.verdict}</div>
+        <div class="hist-conf">${s.conf}%</div>
+      </div>`).join('');
+  }
+
+  function loadHistory(i) { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+  function setLoading(on) {
+    document.getElementById('screenBtn').disabled = on;
+    document.getElementById('btnIcon').innerHTML = on ? '<div class="spinner"></div>' : '🔍';
+    document.getElementById('btnText').textContent = on ? 'Analyzing...' : 'Screen This Case';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorAlert');
+    el.textContent = msg; el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function hideError() { document.getElementById('errorAlert').style.display = 'none'; }
+
+  async function copyResult() {
+    if (!lastResult) return;
+    const r = lastResult;
+    const lines = [
+      `CASE SCREENING REPORT — CaseIQ by NoBullStrategy`,
+      `Client: ${r.clientName}  |  ${r.practiceArea}`,
+      ``,
+      `RECOMMENDATION: ${r.recommendation} (${r.confidence}% confidence)`,
+      r.summary, ``,
+      `FACTORS FOR:`, ...(r.accept_factors||[]).map(f=>`  • ${f}`), ``,
+      `FACTORS AGAINST:`, ...(r.decline_factors||[]).map(f=>`  • ${f}`), ``,
+      `KEY RISKS:`, ...(r.key_risks||[]).map(f=>`  • ${f}`), ``,
+      `NEXT STEPS:`, ...(r.next_steps||[]).map((f,i)=>`  ${i+1}. ${f}`),
+    ];
+    await navigator.clipboard.writeText(lines.join('\n'));
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.innerHTML = '📋 Copy', 2000);
+  }
+
+  function clearForm() {
+    ['clientName','clientContact','practiceArea','incidentDate','caseDescription','damages','opposingParty','notes']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['pa_no','sol_no','ev_no','ins_no'].forEach(id => document.getElementById(id).checked = true);
+    document.getElementById('resultsEmpty').style.display = 'flex';
+    document.getElementById('resultsContent').style.display = 'none';
+    hideError();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

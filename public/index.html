@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CaseIQ — AI Legal Intake Screener | NoBullStrategy</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #0c0c0c;
+      --black2: #161616;
+      --black3: #1e1e1e;
+      --gold: #c9a84c;
+      --gold-light: #e8c96d;
+      --white: #ffffff;
+      --off-white: #f5f3ef;
+      --gray: #888888;
+      --lgray: #e2e2e2;
+      --green: #166534;
+      --green-bg: #dcfce7;
+    }
+    body { font-family: 'Georgia', serif; background: var(--black); color: var(--white); }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(12,12,12,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #222;
+      padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; }
+    .nav-logo-mark {
+      width: 32px; height: 32px; border-radius: 6px;
+      background: var(--gold); display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .nav-brand { font-size: 17px; font-weight: 700; }
+    .nav-brand span { color: var(--gold); }
+    .nav-right { display: flex; gap: 12px; align-items: center; }
+    .btn-nav-ghost {
+      background: none; border: 1px solid #333; color: var(--gray);
+      padding: 7px 16px; border-radius: 6px; cursor: pointer;
+      font-family: Arial, sans-serif; font-size: 13px; font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-nav-ghost:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-nav-cta {
+      background: var(--gold); border: none; color: var(--black);
+      padding: 8px 18px; border-radius: 6px; cursor: pointer;
+      font-family: Arial, sans-serif; font-size: 13px; font-weight: 700;
+      transition: background 0.2s;
+    }
+    .btn-nav-cta:hover { background: var(--gold-light); }
+
+    /* HERO */
+    .hero {
+      text-align: center; padding: 80px 24px 60px;
+      background: radial-gradient(ellipse at 50% 0%, #1a1500 0%, var(--black) 65%);
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3);
+      color: var(--gold); font-size: 11px; font-weight: 700;
+      font-family: Arial, sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 5px 14px; border-radius: 20px; margin-bottom: 22px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 48px); line-height: 1.18;
+      max-width: 720px; margin: 0 auto 20px;
+    }
+    .hero h1 em { color: var(--gold); font-style: normal; }
+    .hero-sub {
+      font-size: 17px; color: var(--gray); max-width: 540px;
+      margin: 0 auto 36px; line-height: 1.65;
+      font-family: Arial, sans-serif;
+    }
+    .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--gold); color: var(--black); border: none;
+      padding: 14px 32px; border-radius: 8px; cursor: pointer;
+      font-family: Arial, sans-serif; font-size: 15px; font-weight: 700;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
+    .btn-ghost {
+      background: none; color: var(--white); border: 1px solid #444;
+      padding: 14px 28px; border-radius: 8px; cursor: pointer;
+      font-family: Arial, sans-serif; font-size: 15px; font-weight: 600;
+      transition: border-color 0.2s;
+    }
+    .btn-ghost:hover { border-color: var(--gray); }
+    .hero-note { margin-top: 14px; font-size: 12px; color: #555; font-family: Arial, sans-serif; }
+
+    /* SOCIAL PROOF BAR */
+    .proof-bar {
+      background: var(--black2); border-top: 1px solid #1e1e1e;
+      border-bottom: 1px solid #1e1e1e;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: center; gap: 40px;
+      flex-wrap: wrap;
+    }
+    .proof-item {
+      font-family: Arial, sans-serif; font-size: 12px; color: #555;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .proof-item strong { color: var(--gold); font-size: 15px; }
+
+    /* DEMO / SCREENSHOT PLACEHOLDER */
+    .demo-section { padding: 60px 24px; max-width: 900px; margin: 0 auto; }
+    .demo-window {
+      background: var(--black2); border: 1px solid #2a2a2a;
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+    .demo-titlebar {
+      background: #1a1a1a; padding: 10px 16px;
+      display: flex; align-items: center; gap: 7px;
+      border-bottom: 1px solid #222;
+    }
+    .demo-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .demo-url {
+      flex: 1; text-align: center; font-size: 11px; color: #444;
+      font-family: Arial, sans-serif;
+    }
+    .demo-content {
+      padding: 24px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      min-height: 220px;
+    }
+    @media (max-width: 600px) { .demo-content { grid-template-columns: 1fr; } }
+    .demo-form { background: #111; border-radius: 8px; padding: 16px; }
+    .demo-form-title { font-size: 11px; color: var(--gold); font-family: Arial, sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+    .demo-field { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 5px; height: 30px; margin-bottom: 8px; }
+    .demo-field.tall { height: 60px; }
+    .demo-btn { background: var(--gold); border-radius: 5px; height: 34px; width: 100%; margin-top: 4px; }
+    .demo-result { background: #111; border-radius: 8px; padding: 16px; }
+    .demo-verdict {
+      background: var(--green-bg); border: 1px solid #86efac;
+      border-radius: 8px; padding: 12px 14px; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .demo-verdict-icon { font-size: 22px; }
+    .demo-verdict-text { font-family: Arial, sans-serif; }
+    .demo-verdict-label { font-size: 14px; font-weight: 800; color: var(--green); }
+    .demo-verdict-sub { font-size: 11px; color: #555; }
+    .demo-bars { display: flex; flex-direction: column; gap: 6px; }
+    .demo-bar-row { display: flex; align-items: center; gap: 8px; }
+    .demo-bar-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+    .demo-bar-line { flex: 1; height: 8px; background: #1e1e1e; border-radius: 4px; }
+    .demo-bar-fill { height: 100%; border-radius: 4px; background: #2a2a2a; }
+
+    /* HOW IT WORKS */
+    .hiw { padding: 60px 24px; max-width: 900px; margin: 0 auto; }
+    .section-label {
+      text-align: center; font-size: 11px; font-weight: 700; color: var(--gold);
+      letter-spacing: 2px; text-transform: uppercase; font-family: Arial, sans-serif;
+      margin-bottom: 10px;
+    }
+    .section-title { text-align: center; font-size: 28px; margin-bottom: 44px; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    @media (max-width: 700px) { .steps { grid-template-columns: 1fr; } }
+    .step {
+      background: var(--black2); border: 1px solid #1e1e1e;
+      border-radius: 10px; padding: 24px; text-align: center;
+    }
+    .step-num {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: transparent; border: 2px solid var(--gold);
+      color: var(--gold); font-family: Arial, sans-serif; font-weight: 700; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+    }
+    .step h3 { font-size: 15px; margin-bottom: 8px; }
+    .step p { font-size: 13px; color: var(--gray); font-family: Arial, sans-serif; line-height: 1.6; }
+
+    /* FEATURES */
+    .features { padding: 60px 24px; max-width: 900px; margin: 0 auto; }
+    .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    @media (max-width: 600px) { .features-grid { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--black2); border: 1px solid #1e1e1e;
+      border-radius: 10px; padding: 20px;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .feature-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .feature-card h4 { font-size: 14px; margin-bottom: 5px; }
+    .feature-card p { font-size: 12.5px; color: var(--gray); font-family: Arial, sans-serif; line-height: 1.55; }
+
+    /* PRICING */
+    .pricing { padding: 60px 24px; max-width: 900px; margin: 0 auto; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
+    @media (max-width: 700px) { .pricing-grid { grid-template-columns: 1fr; } }
+    .plan {
+      background: var(--black2); border: 1px solid #222;
+      border-radius: 12px; padding: 26px 22px;
+      display: flex; flex-direction: column;
+    }
+    .plan.featured {
+      background: var(--black3); border-color: var(--gold);
+      box-shadow: 0 0 30px rgba(201,168,76,0.12);
+      position: relative;
+    }
+    .plan-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--gold); color: var(--black);
+      font-size: 10px; font-weight: 700; font-family: Arial, sans-serif;
+      letter-spacing: 0.8px; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 20px;
+    }
+    .plan-name { font-size: 13px; font-weight: 700; color: var(--gray); font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .plan-price { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+    .plan-price span { font-size: 14px; color: var(--gray); font-family: Arial, sans-serif; font-weight: 400; }
+    .plan-desc { font-size: 12px; color: var(--gray); font-family: Arial, sans-serif; margin-bottom: 20px; }
+    .plan-features { list-style: none; margin-bottom: 24px; flex: 1; }
+    .plan-features li {
+      font-size: 13px; font-family: Arial, sans-serif; color: #ccc;
+      padding: 5px 0; border-bottom: 1px solid #1e1e1e;
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+    .plan-features li::before { content: '✓'; color: var(--gold); font-weight: 700; flex-shrink: 0; }
+    .btn-plan {
+      width: 100%; padding: 12px; border-radius: 7px;
+      font-family: Arial, sans-serif; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; border: none;
+    }
+    .btn-plan-ghost { background: none; border: 1px solid #333; color: var(--white); }
+    .btn-plan-ghost:hover { border-color: var(--gold); }
+    .btn-plan-gold { background: var(--gold); color: var(--black); }
+    .btn-plan-gold:hover { background: var(--gold-light); }
+
+    /* FOOTER */
+    footer {
+      background: var(--black2); border-top: 1px solid #1e1e1e;
+      padding: 28px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-brand { font-size: 14px; font-weight: 700; }
+    .footer-brand span { color: var(--gold); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 12px; color: var(--gray); font-family: Arial, sans-serif; text-decoration: none; }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-copy { font-size: 12px; color: #444; font-family: Arial, sans-serif; width: 100%; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-mark">⚖️</div>
+    <div class="nav-brand">NoBull<span>Strategy</span></div>
+  </div>
+  <div class="nav-right">
+    <button class="btn-nav-ghost" onclick="netlifyIdentity.open('login')">Log In</button>
+    <button class="btn-nav-cta" onclick="netlifyIdentity.open('signup')">Start Free Trial</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">AI-Powered Legal Intake · By NoBullStrategy</div>
+  <h1>Know in 60 seconds whether to <em>take the case</em>.</h1>
+  <p class="hero-sub">CaseIQ analyzes every intake against your practice criteria and delivers a clear Accept / Decline verdict — with full reasoning, risks, and next steps.</p>
+  <div class="hero-cta">
+    <button class="btn-primary" onclick="netlifyIdentity.open('signup')">Start 14-Day Free Trial</button>
+    <button class="btn-ghost" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">See How It Works</button>
+  </div>
+  <p class="hero-note">No credit card required · Cancel anytime · Setup in 2 minutes</p>
+</section>
+
+<!-- PROOF BAR -->
+<div class="proof-bar">
+  <div class="proof-item"><strong>60 sec</strong> average screening time</div>
+  <div class="proof-item"><strong>100%</strong> consistent criteria, every call</div>
+  <div class="proof-item"><strong>$0</strong> setup — works in any browser</div>
+  <div class="proof-item"><strong>🔒</strong> No client data stored</div>
+</div>
+
+<!-- DEMO SECTION -->
+<section class="demo-section" id="demo">
+  <div style="text-align:center; margin-bottom: 28px;">
+    <div class="section-label">Live Preview</div>
+    <div class="section-title" style="font-size:22px;">What your intake coordinator sees</div>
+  </div>
+  <div class="demo-window">
+    <div class="demo-titlebar">
+      <div class="demo-dot" style="background:#ff5f57;"></div>
+      <div class="demo-dot" style="background:#febc2e;"></div>
+      <div class="demo-dot" style="background:#28c840;"></div>
+      <div class="demo-url">caseiq.nobullstrategy.com/app</div>
+    </div>
+    <div class="demo-content">
+      <div class="demo-form">
+        <div class="demo-form-title">Intake Form</div>
+        <div class="demo-field"></div>
+        <div class="demo-field"></div>
+        <div class="demo-field tall"></div>
+        <div class="demo-field"></div>
+        <div class="demo-btn"></div>
+      </div>
+      <div class="demo-result">
+        <div class="demo-verdict">
+          <div class="demo-verdict-icon">✅</div>
+          <div class="demo-verdict-text">
+            <div class="demo-verdict-label">RECOMMEND: ACCEPT</div>
+            <div class="demo-verdict-sub">87% confidence · Personal Injury</div>
+          </div>
+        </div>
+        <div class="demo-bars">
+          <div style="font-size:10px; color:#555; font-family:Arial,sans-serif; margin-bottom:4px;">FACTORS FOR ACCEPTANCE</div>
+          <div class="demo-bar-row"><div class="demo-bar-dot"></div><div class="demo-bar-line"><div class="demo-bar-fill" style="width:85%;"></div></div></div>
+          <div class="demo-bar-row"><div class="demo-bar-dot"></div><div class="demo-bar-line"><div class="demo-bar-fill" style="width:70%;"></div></div></div>
+          <div class="demo-bar-row"><div class="demo-bar-dot"></div><div class="demo-bar-line"><div class="demo-bar-fill" style="width:90%;"></div></div></div>
+          <div style="font-size:10px; color:#555; font-family:Arial,sans-serif; margin:8px 0 4px;">NEXT STEPS</div>
+          <div class="demo-bar-row"><div class="demo-bar-dot" style="background:#888;"></div><div class="demo-bar-line"><div class="demo-bar-fill" style="width:75%;"></div></div></div>
+          <div class="demo-bar-row"><div class="demo-bar-dot" style="background:#888;"></div><div class="demo-bar-line"><div class="demo-bar-fill" style="width:55%;"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="hiw">
+  <div class="section-label">Simple Process</div>
+  <div class="section-title">Three steps. Zero guesswork.</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Fill the Intake Form</h3>
+      <p>Enter client details, case type, what happened, and damages. Takes under 2 minutes.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Click Screen</h3>
+      <p>CaseIQ runs the intake through our AI and scores it against proven acceptance criteria.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Get the Verdict</h3>
+      <p>Accept, Decline, or Needs Review — with full reasoning, risks, and next steps.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-label">Everything Included</div>
+  <div class="section-title" style="margin-bottom:28px;">Built for intake. Nothing you don't need.</div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">✅</div>
+      <div><h4>Clear Verdict Every Time</h4><p>Accept, Decline, or Needs Review — with a confidence score so you know how close the call is.</p></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <div><h4>Full Reasoning</h4><p>Factors for, factors against, key risks — all in plain English your staff can actually act on.</p></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div><h4>Results in Under 10 Seconds</h4><p>Screen while the client is still on the phone. No waiting, no lag.</p></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🖨</div>
+      <div><h4>Print-Ready Reports</h4><p>One click to print or save as PDF. Drop it straight into your case file.</p></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div><h4>No Client Data Stored</h4><p>Every screening runs privately. Nothing is logged or retained after your session ends.</p></div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📂</div>
+      <div><h4>Session History</h4><p>Review all screenings from your current session in one place — organized and searchable.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="section-label">Pricing</div>
+  <div class="section-title">Straightforward. No bull.</div>
+  <div class="pricing-grid">
+    <div class="plan">
+      <div class="plan-name">Solo</div>
+      <div class="plan-price">$199<span>/mo</span></div>
+      <div class="plan-desc">For solo practitioners</div>
+      <ul class="plan-features">
+        <li>1 attorney seat</li>
+        <li>Unlimited screenings</li>
+        <li>All practice areas</li>
+        <li>Print-ready reports</li>
+        <li>Email support</li>
+      </ul>
+      <button class="btn-plan btn-plan-ghost" onclick="netlifyIdentity.open('signup')">Start Free Trial</button>
+    </div>
+    <div class="plan featured">
+      <div class="plan-badge">Most Popular</div>
+      <div class="plan-name">Firm</div>
+      <div class="plan-price">$349<span>/mo</span></div>
+      <div class="plan-desc">For small to mid-size firms</div>
+      <ul class="plan-features">
+        <li>Up to 10 seats</li>
+        <li>Unlimited screenings</li>
+        <li>All practice areas</li>
+        <li>Print-ready reports</li>
+        <li>Priority support + onboarding</li>
+      </ul>
+      <button class="btn-plan btn-plan-gold" onclick="netlifyIdentity.open('signup')">Start Free Trial</button>
+    </div>
+    <div class="plan">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price" style="font-size:24px; padding-top:6px;">Custom</div>
+      <div class="plan-desc">For large firms &amp; legal groups</div>
+      <ul class="plan-features">
+        <li>Unlimited seats</li>
+        <li>API access</li>
+        <li>Custom integrations</li>
+        <li>Dedicated success manager</li>
+        <li>SLA guarantee</li>
+      </ul>
+      <button class="btn-plan btn-plan-ghost" onclick="window.location='mailto:hello@nobullstrategy.com'">Contact Us</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">NoBull<span>Strategy</span> · CaseIQ</div>
+  <div class="footer-links">
+    <a href="mailto:hello@nobullstrategy.com">Contact</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/app.html">Log In</a>
+  </div>
+  <div class="footer-copy">© 2026 NoBullStrategy. Straight talk. Smarter intake. No bull.</div>
+</footer>
+
+<script>
+  // Netlify Identity — redirect to app after login
+  netlifyIdentity.on('login', () => {
+    window.location.href = '/app.html';
+  });
+  netlifyIdentity.on('init', user => {
+    if (user) window.location.href = '/app.html';
+  });
+</script>
+</body>
+</html>

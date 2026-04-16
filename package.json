@@ -1,0 +1,9 @@
+{
+  "name": "caseiq",
+  "version": "1.0.0",
+  "description": "CaseIQ — AI-powered legal intake screener by NoBullStrategy",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
+    "stripe": "^14.0.0"
+  }
+}
